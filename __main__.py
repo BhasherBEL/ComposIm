@@ -6,13 +6,15 @@ import os
 import numpy as np
 import random
 import sys
+import multiprocessing
+import copy
 
 import FileCheck
 import Gradients
 
 DEFAULT_DIR = "/home/bhasher/Desktop/OYG"
 MASTER_NAME = "0-02-05_full.jpg"
-MASTER_SIZE = 100
+MASTER_SIZE = 150
 SMALL_SIZE = 50
 
 
@@ -34,11 +36,16 @@ def request_path():
 	return dir_src
 
 
+def generate(path, i):
+	image = Image.open(path).resize((SMALL_SIZE, SMALL_SIZE))
+	q.put([image, Gradients.get_gradient(image.getdata()), i])
+
+
 if __name__ == "__main__":
 
 	DIR_SRC = request_path()
 
-	images_sources = FileCheck.get_dir_content(DIR_SRC)[:50]
+	images_sources = FileCheck.get_dir_content(DIR_SRC)
 	len_images_sources = len(images_sources)
 
 	master_image = FileCheck.get_image(DIR_SRC + "/" + MASTER_NAME)
@@ -47,20 +54,33 @@ if __name__ == "__main__":
 
 	master_data = np.array(master_image.resize((MASTER_SIZE, MASTER_SIZE)).getdata())
 
-	print("{0} images trouvées.".format(len(images_sources)))
+	print("{0} images trouvées.".format(len_images_sources))
 	sys.stdout.write(' ')
 
 	images_gradient = {}
 	images = {}
+	q = multiprocessing.Queue()
 
-	for i in range(len(images_sources)):
-		image = Image.open(DIR_SRC + "/" + images_sources[i]).resize((SMALL_SIZE, SMALL_SIZE))
-		images[i] = image
-		images_gradient[i] = Gradients.get_gradient(image.getdata())
-		sys.stdout.write('\r{0}/{1}'.format(i+1, len_images_sources))
+	for i in range(len_images_sources):
+		multiprocessing.Process(target=generate, args=(DIR_SRC + "/" + images_sources[i], i)).start()
+		if (i+1) % 20 == 0:
+			sys.stdout.write('\rChargement ... {0}/{1}'.format(i+1, len_images_sources))
+
+	sys.stdout.write('\rChargement ... {0}/{0} Ok'.format(len_images_sources))
+	print(' ')
+	for i in range(len_images_sources):
+		result = q.get(True)
+		images[result[2]] = result[0]
+		images_gradient[result[2]] = result[1]
+		if (i+1) % 20 == 0:
+			sys.stdout.write('\rSauvegarde ... {0}/{1}'.format(i+1, len_images_sources))
+
+	sys.stdout.write('\rSauvegarde ... {0}/{0} Ok'.format(len_images_sources))
+	print(' ')
 
 	according = {}
-	for i in range(len(master_data)):
+	len_master_data = len(master_data)
+	for i in range(len_master_data):
 		best = []
 		best_value = 195075
 		for j in range(len(images_gradient)):
@@ -71,10 +91,17 @@ if __name__ == "__main__":
 					best = [j]
 				else:
 					best.append(j)
+		if (i+1) % 200 == 0:
+			sys.stdout.write('\rLien ... {0}/{1}'.format(i+1, len_master_data))
 
 		according[i] = random.choice(best)
 
+	sys.stdout.write('\rLien ... {0}/{0} Ok'.format(len_master_data))
+	print(' ')
+
 	correspondence = np.array(list(according.values())).reshape(MASTER_SIZE, MASTER_SIZE)
+
+	sys.stdout.write('\rCréation de l\'image finale ...')
 
 	final_image = Image.new('RGB', (MASTER_SIZE * SMALL_SIZE, MASTER_SIZE * SMALL_SIZE), (255, 255, 255))
 
@@ -82,4 +109,9 @@ if __name__ == "__main__":
 		for j in range(len(correspondence[0])):
 			final_image.paste(images[correspondence[i][j]], (j * SMALL_SIZE, i * SMALL_SIZE))
 
+	sys.stdout.write('\rCréation de l\'image finale ... Ok')
+	print(' ')
+	sys.stdout.write('\rSauvegarde de l\'image finale ...')
+
 	final_image.save("/home/bhasher/Desktop/test.jpg", format="jpeg")
+	sys.stdout.write('\rSauvegarde de l\'image finale ... Ok')
