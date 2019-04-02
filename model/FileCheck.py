@@ -3,28 +3,26 @@
 
 import os
 from PIL import Image
+from typing import List
 
 
-def is_valid_dir(path):
+def is_valid_dir(path: str) -> bool:
 	if type(path) is str or type(path) is bytes or type(path) is os.PathLike or type(path) is int:
 		return os.path.exists(path) and os.path.isdir(path)
-	return False
+	else:
+		return False
 
 
-def get_dir_content(path):
+def get_dir_content(path: str) -> List[str]:
 	if is_valid_dir(path):
-		try:
-			return os.listdir(path)
-		except Exception:
-			return []
-	return []
+		return os.listdir(path)
+	else:
+		return []
 
 
-def get_image(path):
+def get_image(path: str) -> (Image, None):
 	if os.path.exists(path) and os.path.isfile(path) and os.access(path, os.R_OK):
-		try:
-			image = Image.open(path)
-			return image
-		except Exception:
-			return None
-	return None
+		image = Image.open(path)
+		return image
+	else:
+		return None
