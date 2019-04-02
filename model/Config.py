@@ -15,8 +15,12 @@ def get_master_name() -> str:
 
 
 def get_master_size() -> int:
-	return 100
+	return 200
 
 
 def get_small_size() -> int:
 	return 50
+
+
+def use_memory() -> bool:
+	return False
