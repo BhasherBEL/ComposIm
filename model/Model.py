@@ -21,9 +21,6 @@ def generate(images: list, master: Image, images_size: int, master_size: int) ->
 	master_data = np.array(master.resize((master_size, master_size)).getdata())
 	len_images = len(images)
 
-	images_gradient = {}
-	q = multiprocessing.Queue()
-
 	start_time = time.time()
 	View.resize()
 	for i in range(len_images):
@@ -33,6 +30,9 @@ def generate(images: list, master: Image, images_size: int, master_size: int) ->
 	View.ok_task(time.time()-start_time)
 	start_time = time.time()
 	View.gradient()
+
+	images_gradient = {}
+	q = multiprocessing.Queue()
 	for i in range(len_images):
 		multiprocessing.Process(target=put_gradient, args=(images[i], i)).start()
 
@@ -52,7 +52,7 @@ def generate(images: list, master: Image, images_size: int, master_size: int) ->
 	len_master_data = len(master_data)
 	for i in range(len_master_data):
 		best = []
-		best_value = 195075
+		best_value = 195076
 		for j in range(len(images_gradient)):
 			value = ((master_data[i] - images_gradient[j]) ** 2).sum()
 			if value <= best_value:

@@ -3,7 +3,7 @@
 
 import time
 
-from model import Model, FileCheck, Config
+from model import Model, FileCheck, Config, LoadImages
 from view import View
 
 
@@ -34,7 +34,7 @@ def execute() -> None:
 
 	start_time = time.time()
 	View.load()
-	images = [FileCheck.get_image(dir_src + '/' + image_source).resize((Config.get_small_size(), Config.get_small_size())) for image_source in images_sources]
+	images = LoadImages.load_images_with_resize(dir_src, images_sources, Config.get_small_size(), Config.get_small_size())
 
 	master_image = FileCheck.get_image(dir_src + "/" + Config.get_master_name())
 	View.ok_task(time.time()-start_time)
