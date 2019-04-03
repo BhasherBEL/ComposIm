@@ -15,7 +15,7 @@ def get_default_dir() -> str:
 
 
 def get_master_name() -> str:
-	return '20190213_212240.jpg'
+	return '0-02-05_full.jpg'
 
 
 def get_master_size() -> int:

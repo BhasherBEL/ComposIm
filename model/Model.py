@@ -1,16 +1,14 @@
 #!/usr/local/bin/python
 # coding: utf-8
 
-from PIL import Image
-import numpy as np
-import random
 import multiprocessing
+import random
+import numpy as np
+from PIL import Image
 
-from view import View
 from model import Gradients
 from model.decorators import Decorators
-
-gradient_values = {}
+from view import View
 
 
 def put_gradient(image: Image, i: int) -> None:
