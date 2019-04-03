@@ -24,7 +24,7 @@ def load() -> None:
 
 
 def resize() -> None:
-	sys.stdout.write('\rRedimensionnement des images ...')
+	sys.stdout.write('\rRedimensionnement des images ... ')
 
 
 def gradient() -> None:
@@ -49,3 +49,9 @@ def save_final_image() -> None:
 
 def ok_task(time: float = None) -> None:
 	print('Ok' + ('' if time is None else ' ({}s)'.format(round(time, 2))))
+
+
+def total_time(time: float) -> None:
+	print('-'*(26+len(str(round(time, 2)))))
+	print('Durée total d\'execution: {}s'.format(round(time, 2)))
+	print('-'*(26+len(str(round(time, 2)))))

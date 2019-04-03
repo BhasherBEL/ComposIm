@@ -4,6 +4,7 @@
 import time
 
 from model import Model, FileCheck, Config, LoadImages
+from model.decorators import Decorators
 from view import View
 
 
@@ -24,6 +25,7 @@ def request_path() -> str:
 	return dir_src
 
 
+@Decorators.timer(View.total_time)
 def execute() -> None:
 
 	dir_src = request_path()
@@ -34,12 +36,12 @@ def execute() -> None:
 
 	start_time = time.time()
 	View.load()
-	images_data = LoadImages.load_images_with_resize(dir_src, images_sources, Config.get_small_size(), Config.get_small_size())
+	images = LoadImages.load_images_with_resize(dir_src, images_sources, Config.get_small_size(), Config.get_small_size())
 
 	master_image = FileCheck.get_image(dir_src + "/" + Config.get_master_name())
 	View.ok_task(time.time()-start_time)
 
-	final_image = Model.generate(images_data, master_image, Config.get_small_size(), Config.get_master_size())
+	final_image = Model.generate(images, master_image, Config.get_small_size(), Config.get_master_size())
 
 	View.save_final_image()
 

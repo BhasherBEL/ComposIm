@@ -6,10 +6,10 @@ import numpy as np
 import random
 import multiprocessing
 import time
-import os
 
 from view import View
-from model import Gradients, FileCheck, Config
+from model import Gradients
+from model.decorators import Decorators
 
 gradient_values = {}
 
@@ -18,67 +18,39 @@ def put_gradient(image: Image, i: int) -> None:
 	q.put([i, Gradients.get_gradient(image.getdata())])
 
 
-def generate(images_data: dict, master: Image, images_size: int, master_size: int) -> Image:
+@Decorators.view(View.resize)
+@Decorators.timer()
+def resize_all(images: list, w_size: int, h_size: int) -> list:
+	for i in range(len(images)):
+		if images[i].size != (w_size, h_size):
+			images[i] = images[i].resize((w_size, h_size))
+	return images
+
+
+@Decorators.view(View.gradient)
+@Decorators.timer()
+def multiprocess_gradients(images: list) -> None:
 	global q
-
-	pre_path = []
-
-	post_path = []
-	images = []
-
-	for path, image in images_data.items():
-		if not Config.use_memory() or image is not None:
-			if Config.use_memory():
-				post_path.append(path)
-			images.append(image)
-		else:
-			pre_path.append(path)
-
-	master_data = np.array(master.resize((master_size, master_size)).getdata())
-	len_images = len(images)
-
-	start_time = time.time()
-	View.resize()
-	for i in range(len_images):
-		if images[i].size != (images_size, images_size):
-			images[i] = images[i].resize((images_size, images_size))
-
-	View.ok_task(time.time()-start_time)
-	start_time = time.time()
-	View.gradient()
-
-	images_gradient = {}
 	q = multiprocessing.Queue()
-	for i in range(len_images):
+	for i in range(len(images)):
 		multiprocessing.Process(target=put_gradient, args=(images[i], i)).start()
 
-	View.ok_task(time.time()-start_time)
-	start_time = time.time()
-	View.save()
 
+@Decorators.view(View.save)
+@Decorators.timer()
+def multiprocess_saver(len_images: int) -> dict:
+	images_gradient = {}
 	for i in range(len_images):
 		result = q.get(True)
 		images_gradient[result[0]] = result[1]
+	return images_gradient
 
-	View.ok_task(time.time()-start_time)
-	start_time = time.time()
-	View.link()
 
-	gradient_last_index = len(images_gradient)-1
-
-	path_gradients = {}
-	path_images = {}
-
-	for path in pre_path:
-		try:
-			images_gradient[len(images_gradient)] = gradient_values[path]
-			path_gradients[len(images_gradient)-1] = path
-		except ValueError as e:
-			print(e)
-
+@Decorators.view(View.link)
+@Decorators.timer()
+def links(master_data: list, images_gradient: dict) -> dict:
 	according = {}
-	len_master_data = len(master_data)
-	for i in range(len_master_data):
+	for i in range(len(master_data)):
 		best = []
 		best_value = 195076
 		for j in range(len(images_gradient)):
@@ -91,33 +63,35 @@ def generate(images_data: dict, master: Image, images_size: int, master_size: in
 					best.append(j)
 
 		according[i] = random.choice(best)
+	return according
 
-	View.ok_task(time.time()-start_time)
-	start_time = time.time()
-	View.make_final()
 
+@Decorators.view(View.make_final)
+@Decorators.timer()
+def make_final(according: dict, images: list, master_size: int, images_size: int):
 	correspondence = np.array(list(according.values())).reshape(master_size, master_size)
 
 	final_image = Image.new('RGB', (master_size * images_size, master_size * images_size), (255, 255, 255))
 
 	for i in range(len(correspondence)):
 		for j in range(len(correspondence[0])):
-			val = correspondence[i][j]
-			if val <= gradient_last_index:
-				image = images[val]
-			else:
-				if val in path_images:
-					image = path_images[val]
-				else:
-					path_images[val] = FileCheck.get_image(path_gradients[val]).resize((images_size, images_size))
-					image = path_images[val]
-			final_image.paste(image, (j * images_size, i * images_size))
+			final_image.paste(images[correspondence[i][j]], (j * images_size, i * images_size))
 
-	View.ok_task(time.time()-start_time)
+	return final_image
 
-	if Config.use_memory():
-		with open(os.path.abspath('model/saves/ImageGradient'), 'a+') as file:
-			for i in range(gradient_last_index+1):
-				file.write("{0}:{1}:{2}:{3}\n".format(post_path[i], images_gradient[i][0], images_gradient[i][1], images_gradient[i][2]))
+
+def generate(images: list, master: Image, images_size: int, master_size: int) -> Image:
+
+	master_data = master.resize((master_size, master_size)).getdata()
+
+	images = resize_all(images, images_size, images_size)
+
+	multiprocess_gradients(images)
+
+	images_gradient = multiprocess_saver(len(images))
+
+	according = links(master_data, images_gradient)
+
+	final_image = make_final(according, images, master_size, images_size)
 
 	return final_image

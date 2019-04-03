@@ -1,3 +1,7 @@
+#!/usr/local/bin/python
+# coding: utf-8
+
+
 def get_save_path() -> str:
 	return '/home/bhasher/Desktop/test.jpg'
 
@@ -20,7 +24,3 @@ def get_master_size() -> int:
 
 def get_small_size() -> int:
 	return 50
-
-
-def use_memory() -> bool:
-	return False
