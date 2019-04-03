@@ -5,7 +5,6 @@ from PIL import Image
 import numpy as np
 import random
 import multiprocessing
-import time
 
 from view import View
 from model import Gradients
@@ -15,7 +14,7 @@ gradient_values = {}
 
 
 def put_gradient(image: Image, i: int) -> None:
-	q.put([i, Gradients.get_gradient(image.getdata())])
+	q.put([i, Gradients.get_gradient(image)])
 
 
 @Decorators.view(View.resize)

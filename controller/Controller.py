@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import time
+from PIL import Image
 
 from model import Model, FileCheck, Config, LoadImages
 from model.decorators import Decorators
@@ -25,6 +26,12 @@ def request_path() -> str:
 	return dir_src
 
 
+@Decorators.view(View.save_final_image)
+@Decorators.timer()
+def save_image(final_image: Image, path: str, file_format: str = None) -> None:
+	final_image.save(path, format=file_format)
+
+
 @Decorators.timer(View.total_time)
 def execute() -> None:
 
@@ -43,7 +50,5 @@ def execute() -> None:
 
 	final_image = Model.generate(images, master_image, Config.get_small_size(), Config.get_master_size())
 
-	View.save_final_image()
+	save_image(final_image, Config.get_save_path(), Config.get_save_format())
 
-	final_image.save(Config.get_save_path(), format=Config.get_save_format())
-	View.ok_task()
