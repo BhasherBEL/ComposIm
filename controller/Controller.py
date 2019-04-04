@@ -9,23 +9,6 @@ from model.decorators import Decorators
 from view import View
 
 
-def request_path() -> str:
-	dir_src = None
-	while not FileCheck.is_valid_dir(dir_src):
-
-		if dir_src is not None:
-			View.invalid_source_path(dir_src)
-
-		user_src = View.get_source_path()
-
-		if user_src == "":
-			dir_src = Config.get_default_dir()
-		else:
-			dir_src = user_src
-
-	return dir_src
-
-
 @Decorators.view(View.save_final_image)
 @Decorators.timer()
 def save_image(final_image: Image, path: str, file_format: str = None) -> None:
@@ -35,7 +18,7 @@ def save_image(final_image: Image, path: str, file_format: str = None) -> None:
 @Decorators.timer(View.total_time)
 def execute() -> None:
 
-	dir_src = request_path()
+	dir_src = Config.get_default_dir()
 
 	images_sources = FileCheck.get_dir_content(dir_src)
 

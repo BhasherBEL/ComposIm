@@ -6,7 +6,7 @@ import random
 import numpy as np
 from PIL import Image
 
-from model import Gradients
+from model import Gradients, Filters
 from model.decorators import Decorators
 from view import View
 
@@ -91,4 +91,6 @@ def generate(images: list, master: Image, images_size: int, master_size: int) ->
 
 	final_image = make_final(according, images, master_size, images_size)
 
-	return final_image
+	overlay_final_image = Filters.overlay(final_image, master, 0.45)
+
+	return overlay_final_image

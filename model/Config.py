@@ -23,4 +23,4 @@ def get_master_size() -> int:
 
 
 def get_small_size() -> int:
-	return 50
+	return 100

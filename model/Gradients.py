@@ -21,7 +21,7 @@ colors = {'black': np.array([0, 0, 0]),
 
 
 def get_gradient(image: Image) -> np.array:
-	return get_cluster_gradient(image)
+	return get_mean_gradient(image.getdata())
 
 
 def get_mean_gradient(data: list) -> np.array:
@@ -41,7 +41,7 @@ def get_table_gradient(data: list) -> np.array:
 
 
 def get_cluster_gradient(image: Image) -> np.array:
-	num_clusters = 1
+	num_clusters = 5
 	ar = np.asarray(image)
 	shape = ar.shape
 	ar = ar.reshape(scipy.product(shape[:2]), shape[2]).astype(float)
