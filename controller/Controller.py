@@ -1,10 +1,9 @@
 #!/usr/local/bin/python
 # coding: utf-8
 
-import time
 from PIL import Image
 
-from model import Model, FileCheck, Config, LoadImages
+from model import FileCheck, Config, LoadImages, Model2
 from model.decorators import Decorators
 from view import View
 
@@ -24,14 +23,19 @@ def execute() -> None:
 
 	View.n_images_found(len(images_sources))
 
-	start_time = time.time()
-	View.load()
 	images = LoadImages.load_images_with_resize(dir_src, images_sources, Config.get_small_size(), Config.get_small_size())
 
-	master_image = FileCheck.get_image(dir_src + "/" + Config.get_master_name())
-	View.ok_task(time.time()-start_time)
+	master = FileCheck.get_image(dir_src + "/" + Config.get_master_name())
 
-	final_image = Model.generate(images, master_image, Config.get_small_size(), Config.get_master_size())
+	model = Model2.Modeler()\
+		.set_master(master)\
+		.add_images(images)\
+		.set_small_size(50)\
+		.set_size(100, size_type='r')\
+		.set_gradient_type('mean')\
+		.set_overlay(0.45)
+
+	final_image = model.make()
 
 	save_image(final_image, Config.get_save_path(), Config.get_save_format())
 
