@@ -51,11 +51,11 @@ def links(master_data: list, images_gradient: dict) -> dict:
 		best = []
 		best_value = 195076
 		for j in range(len(images_gradient)):
-			value = ((master_data[i] - images_gradient[j]) ** 2).sum()
+			value = ((np.array(master_data[i]) - np.array(images_gradient[j])) ** 2).sum()
 			if value <= best_value:
-				best_value = ((master_data[i] - images_gradient[j]) ** 2).sum()
 				if value < best_value:
 					best = [j]
+					best_value = value
 				else:
 					best.append(j)
 
@@ -65,14 +65,14 @@ def links(master_data: list, images_gradient: dict) -> dict:
 
 @Decorators.view(View.make_final)
 @Decorators.timer()
-def make_final(according: dict, images: list, master_w: int, master_h: int, images_size: int):
+def make_final(according: dict, images: list, master_w: int, master_h: int, images_space: int):
 	correspondence = np.array(list(according.values())).reshape(master_h, master_w)
 
-	final_image = Image.new('RGB', (images_size * master_w, images_size * master_h), (255, 255, 255))
+	final_image = Image.new('RGB', (images_space * master_w, images_space * master_h), (255, 255, 255))
 
 	for i in range(master_h):
 		for j in range(master_w):
-			final_image.paste(images[correspondence[i][j]], (j * images_size, i * images_size))
+			final_image.paste(images[correspondence[i][j]], (j * images_space, i * images_space))
 
 	return final_image
 
