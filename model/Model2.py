@@ -11,72 +11,6 @@ from view import View
 from model.decorators import Decorators
 
 
-def put_gradient(image: Image, i: int) -> None:
-	q.put([i, Gradients.get_gradient(image)])
-
-
-@Decorators.view(View.resize)
-@Decorators.timer()
-def resize_all(images: list, w_size: int, h_size: int) -> list:
-	for i in range(len(images)):
-		if images[i].size != (w_size, h_size):
-			images[i] = images[i].resize((w_size, h_size))
-	return images
-
-
-@Decorators.view(View.gradient)
-@Decorators.timer()
-def multiprocess_gradients(images: list) -> None:
-	global q
-	q = multiprocessing.Queue()
-	for i in range(len(images)):
-		multiprocessing.Process(target=put_gradient, args=(images[i], i)).start()
-
-
-@Decorators.view(View.save)
-@Decorators.timer()
-def multiprocess_saver(len_images: int) -> dict:
-	images_gradient = {}
-	for i in range(len_images):
-		result = q.get(True)
-		images_gradient[result[0]] = result[1]
-	return images_gradient
-
-
-@Decorators.view(View.link)
-@Decorators.timer()
-def links(master_data: list, images_gradient: dict) -> dict:
-	according = {}
-	for i in range(len(master_data)):
-		best = []
-		best_value = 195076
-		for j in range(len(images_gradient)):
-			value = ((np.array(master_data[i]) - np.array(images_gradient[j])) ** 2).sum()
-			if value <= best_value:
-				if value < best_value:
-					best = [j]
-					best_value = value
-				else:
-					best.append(j)
-
-		according[i] = random.choice(best)
-	return according
-
-
-@Decorators.view(View.make_final)
-@Decorators.timer()
-def make_final(according: dict, images: list, master_w: int, master_h: int, images_space: int):
-	correspondence = np.array(list(according.values())).reshape(master_h, master_w)
-
-	final_image = Image.new('RGB', (images_space * master_w, images_space * master_h), (255, 255, 255))
-
-	for i in range(master_h):
-		for j in range(master_w):
-			final_image.paste(images[correspondence[i][j]], (j * images_space, i * images_space))
-
-	return final_image
-
-
 class Modeler:
 
 	def __init__(self) -> None:
@@ -87,6 +21,8 @@ class Modeler:
 		self.overlay = 0
 		self.w = None
 		self.h = None
+		self.images_gradient = None
+		self.according = None
 
 	def set_master(self, master: Image) -> 'Modeler':
 		self.master = master
@@ -151,30 +87,73 @@ class Modeler:
 		self.overlay = overlay
 		return self
 
-	def make(self):
+	@Decorators.view(View.resize)
+	@Decorators.timer()
+	def resize_all(self) -> 'Modeler':
+		for i in range(len(self.images)):
+			if self.images[i].size != (self.small_size, self.small_size):
+				self.images[i] = self.images[i].resize((self.small_size, self.small_size))
+		return self
 
-		if self.w is None or self.h is None:
-			raise ValueError('Size not define')
-		elif self.small_size is None:
-			raise ValueError('Small size not define')
-		elif not self.images:
-			raise ValueError('No images set')
-		elif self.master is None:
-			raise ValueError('No master image')
+	def gradients(self) -> 'Modeler':
 
+		q = multiprocessing.Queue()
+		images_gradient = {}
+
+		def put_gradient(image: Image, i: int) -> None:
+			q.put([i, Gradients.get_gradient(image)])
+
+		@Decorators.view(View.gradient)
+		@Decorators.timer()
+		def multiprocess_gradients() -> None:
+			for i in range(len(self.images)):
+				multiprocessing.Process(target=put_gradient, args=(self.images[i], i)).start()
+
+		@Decorators.view(View.save)
+		@Decorators.timer()
+		def multiprocess_saver() -> None:
+			for i in range(len(self.images)):
+				result = q.get(True)
+				images_gradient[result[0]] = result[1]
+
+		multiprocess_gradients()
+		multiprocess_saver()
+		self.images_gradient = images_gradient
+		return self
+
+	@Decorators.view(View.link)
+	@Decorators.timer()
+	def links(self) -> 'Modeler':
 		master_data = self.master.resize((self.w, self.h)).getdata()
+		according = {}
 
-		images = resize_all(self.images, self.small_size, self.small_size)
+		for i in range(len(master_data)):
+			best = []
+			best_value = 195076
+			for j in range(len(self.images_gradient)):
+				value = ((np.array(master_data[i]) - np.array(self.images_gradient[j])) ** 2).sum()
+				if value <= best_value:
+					if value < best_value:
+						best = [j]
+						best_value = value
+					else:
+						best.append(j)
 
-		multiprocess_gradients(images)
+			according[i] = random.choice(best)
+		self.according = according
+		return self
 
-		images_gradient = multiprocess_saver(len(images))
+	@Decorators.view(View.make_final)
+	@Decorators.timer()
+	def make_final(self) -> Image:
+		correspondence = np.array(list(self.according.values())).reshape(self.h, self.w)
 
-		according = links(master_data, images_gradient)
+		final_image = Image.new('RGB', (self.small_size * self.w, self.small_size * self.h), (255, 255, 255))
 
-		final_image = make_final(according, images, self.w, self.h, self.small_size)
+		for i in range(self.h):
+			for j in range(self.w):
+				final_image.paste(self.images[correspondence[i][j]], (j * self.small_size, i * self.small_size))
 
-		overlay_final_image = Filters.overlay(final_image, self.master, self.overlay)
+		final_image = Filters.overlay(final_image, self.master, self.overlay)
 
-		return overlay_final_image
-
+		return final_image

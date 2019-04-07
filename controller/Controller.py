@@ -35,7 +35,10 @@ def execute() -> None:
 		.set_gradient_type('mean')\
 		.set_overlay(0.45)
 
-	final_image = model.make()
+	final_image = model.resize_all().\
+		gradients().\
+		links().\
+		make_final()
 
 	save_image(final_image, Config.get_save_path(), Config.get_save_format())
 
