@@ -131,7 +131,7 @@ class Modeler:
 			best = []
 			best_value = 195076
 			for j in range(len(self.images_gradient)):
-				value = ((np.array(master_data[i]) - np.array(self.images_gradient[j])) ** 2).sum()
+				value = ((np.array(master_data[i])[:3] - np.array(self.images_gradient[j])[:3]) ** 2).sum()
 				if value <= best_value:
 					if value < best_value:
 						best = [j]
