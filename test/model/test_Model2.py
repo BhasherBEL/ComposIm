@@ -2,7 +2,3 @@
 # coding: utf-8
 
 import unittest
-
-
-class TestModeller(unittest.TestCase):
-	pass

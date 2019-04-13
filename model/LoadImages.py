@@ -5,21 +5,21 @@ import multiprocessing
 
 from model import FileCheck
 from model.decorators import Decorators
-from view import View
+from view import ConsoleView
 
 
 def __load_image_with_resize(path: str, w_size: int, h_size: int) -> None:
-	q.put(FileCheck.get_image(path).resize((w_size, h_size)))
+    q.put(FileCheck.get_image(path).resize((w_size, h_size)))
 
 
-@Decorators.view(View.load)
+@Decorators.view(ConsoleView.load)
 @Decorators.timer()
 def load_images_with_resize(dir_src: str, paths: list, w_size: int, h_size: int) -> list:
-	global q
+    global q
 
-	q = multiprocessing.Queue()
+    q = multiprocessing.Queue()
 
-	for i in range(len(paths)):
-			multiprocessing.Process(target=__load_image_with_resize, args=(dir_src + "/" + paths[i], w_size, h_size)).start()
+    for i in range(len(paths)):
+            multiprocessing.Process(target=__load_image_with_resize, args=(dir_src + "/" + paths[i], w_size, h_size)).start()
 
-	return [q.get(True) for _ in range(len(paths))]
+    return [q.get(True) for _ in range(len(paths))]
