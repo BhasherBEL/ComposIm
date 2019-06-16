@@ -10,6 +10,9 @@ from model import Filters, Gradients
 from view import ConsoleView
 from model.decorators import Decorators
 
+# TODO:
+#  - overlay 0.7 ?
+#  - surcouche par image et non par pixel ?
 
 class Modeler:
 
@@ -28,7 +31,7 @@ class Modeler:
         self.master = master
         return self
 
-    def set_small_size(self, size: int) -> 'Modeler':
+    def set_small_size(self, size: (int, int)) -> 'Modeler':
         self.small_size = size
         return self
 
@@ -59,7 +62,7 @@ class Modeler:
                 self.w = int(w)
                 self.h = int(self.w * master_h/master_w)
             else:
-                self.h = int(w - (w % self.small_size))
+                self.h = int(w)
                 self.w = int(self.h * master_w/master_h)
         elif h is None and size_type == 'ri':
             if self.master is None:
@@ -73,7 +76,7 @@ class Modeler:
                 self.h = int(w)
                 self.w = int(self.h * master_w/master_h)
             else:
-                self.w = int(w - (w % self.small_size))
+                self.w = int(w)
                 self.h = int(self.w * master_h/master_w)
         else:
             ValueError('Arguments are not compatibles')
@@ -91,8 +94,8 @@ class Modeler:
     @Decorators.timer()
     def resize_all(self) -> 'Modeler':
         for i in range(len(self.images)):
-            if self.images[i].size != (self.small_size, self.small_size):
-                self.images[i] = self.images[i].resize((self.small_size, self.small_size))
+            if self.images[i].size != self.small_size:
+                self.images[i] = self.images[i].resize(self.small_size)
         return self
 
     def gradients(self) -> 'Modeler':
@@ -148,11 +151,11 @@ class Modeler:
     def make_final(self) -> Image:
         correspondence = np.array(list(self.according.values())).reshape(self.h, self.w)
 
-        final_image = Image.new('RGB', (self.small_size * self.w, self.small_size * self.h), (255, 255, 255))
+        final_image = Image.new('RGB', (self.small_size[0] * self.w, self.small_size[1] * self.h), (255, 255, 255))
 
         for i in range(self.h):
             for j in range(self.w):
-                final_image.paste(self.images[correspondence[i][j]], (j * self.small_size, i * self.small_size))
+                final_image.paste(self.images[correspondence[i][j]], (j * self.small_size[0], i * self.small_size[1]))
 
         final_image = Filters.overlay(final_image, self.master, self.overlay)
 

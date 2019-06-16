@@ -6,6 +6,7 @@ import operator
 from PIL import Image
 import scipy
 import scipy.cluster
+import random
 
 colors = {'black': np.array([0, 0, 0]),
           'white': np.array([255, 255, 255]),
@@ -21,7 +22,7 @@ colors = {'black': np.array([0, 0, 0]),
 
 
 def get_gradient(image: Image) -> np.array:
-    return get_mean_gradient(image.getdata())
+    return get_k_gradient(image, 20)
 
 
 def get_mean_gradient(data: list) -> np.array:
@@ -63,3 +64,28 @@ def get_present_gradient(image: Image) -> np.array:
     sorted_pixels = sorted(pixels, key=lambda t: t[0])
     dominant_color = sorted_pixels[-1][1]
     return np.array(dominant_color)
+
+
+def get_k_gradient(image: Image, k) -> np.array:
+    data = np.array(image.getdata())
+
+    k_ids = {}
+    k_values = {}
+    for pixel in data:
+        do = False
+        for k_id, k_value in k_ids.items():
+            if np.abs(k_value - pixel).sum() <= k:
+                do = True
+                if k_id in k_values:
+                    k_values[k_id].append(pixel)
+                else:
+                    k_values[k_id] = [pixel]
+                break
+        if not do:
+            key = len(k_ids)
+            k_ids[key] = pixel
+            k_values[key] = [pixel]
+
+    longer = np.array([len(v) for v in k_values.values()]).argmax()
+    final_value = k_values[longer][np.random.randint(0, len(k_values[longer])-1)]
+    return final_value
